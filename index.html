@@ -1,0 +1,107 @@
+<!doctype html><html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Unseen Bangladesh</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<style>
+:root{--a:#ffb703;--bg:#07130f;--c:#102a21;--t:#eaf7f1}*{box-sizing:border-box}
+body{margin:0;font-family:'Hind Siliguri',sans-serif;background:var(--bg);color:var(--t);scroll-behavior:smooth}
+header{position:sticky;top:0;display:flex;justify-content:space-between;padding:14px 5vw;background:#07130fe0;backdrop-filter:blur(10px);z-index:9}
+header b{font-size:20px;color:var(--a)}header a{color:var(--t);margin-left:16px;text-decoration:none}
+.hero{padding:90px 5vw;text-align:center;background:radial-gradient(circle at 50% 0,#14805f,transparent 65%)}
+.hero h1{font-size:clamp(32px,6vw,64px);margin:0 0 12px}.hero p{opacity:.8;font-size:18px}
+.btn{background:var(--a);color:#222;border:0;padding:12px 24px;border-radius:30px;font:600 16px 'Hind Siliguri';cursor:pointer;text-decoration:none;display:inline-block;margin:4px}
+section{padding:50px 5vw;max-width:1200px;margin:auto}h2{font-size:30px}
+.card{background:var(--c);border-radius:20px;padding:20px;box-shadow:0 10px 30px #0006}
+.grid{display:grid;gap:20px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.chips{display:flex;flex-wrap:wrap;gap:6px;max-height:260px;overflow:auto;margin:10px 0}
+.chip{padding:5px 12px;border-radius:20px;background:#1b3d31;cursor:pointer;font-size:14px}.chip.on{background:var(--a);color:#222}
+input,select,textarea{width:100%;padding:11px;border-radius:12px;border:1px solid #2c5a49;background:#0b1f18;color:var(--t);font:inherit;margin:5px 0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:24px}@media(max-width:800px){.two{grid-template-columns:1fr}}
+img.pl{width:100%;height:170px;object-fit:cover;border-radius:12px;margin-bottom:8px}
+#svg{width:100%;height:auto;border-radius:16px}#svg path{cursor:pointer;stroke:#fff8;stroke-width:.4}
+.av{width:44px;height:44px;border-radius:50%;object-fit:cover;background:#1b3d31;vertical-align:middle;margin-right:8px}
+</style></head><body>
+<header><b id="logo">Unseen Bangladesh</b><nav><a href="#map">আমার ম্যাপ</a><a href="#world">বিশ্ব ম্যাপ</a><a href="#explore">কোথায় ঘুরবেন</a><a href="#gems">লুকানো রত্ন</a><a href="#add">জায়গা যোগ করুন</a></nav></header>
+<div class="hero"><h1 id="h1"></h1><p id="sub"></p><a class="btn" href="#map">জেলা বাছাই শুরু করুন ↓</a></div>
+
+<section id="map"><h2>🗺️ যেসব জেলায় গিয়েছি</h2><div class="two">
+<div class="card"><svg id="svg" viewBox="0 0 800 1000" xmlns="http://www.w3.org/2000/svg"></svg><p id="msg"></p></div>
+<div class="card"><b id="cnt" style="background:#14805f;padding:4px 12px;border-radius:20px"></b>
+<input id="q" placeholder="🔍 জেলা খুঁজুন..." oninput="chips()">
+<div><button class="btn" onclick="all_(1)">সব বাছাই</button><button class="btn" onclick="all_(0)">সব মুছুন</button></div>
+<div id="chips" style="max-height:440px;overflow:auto;margin:10px 0"></div>
+<p><b>থিম</b></p><div class="chips" id="themes"></div>
+<label><input type="checkbox" id="lb" checked onchange="draw()" style="width:auto"> জেলার নাম</label>
+<p><b>আপনার ছবি (ঐচ্ছিক)</b><br><small>না দিলেও সমস্যা নেই, ছবি ছাড়াই ম্যাপ হবে।</small></p><input type="file" id="ph" accept="image/*">
+<input id="who" placeholder="আপনার নাম (ঐচ্ছিক)" oninput="draw()">
+<button class="btn" onclick="dl('#svg',1000,'my-bangladesh-map')">↓ PNG ডাউনলোড</button></div></div></section>
+
+<section id="world"><h2>🌍 যেসব দেশে গিয়েছি</h2><div class="two"><div class="card"><svg id="wsvg" viewBox="0 0 800 700" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;border-radius:16px"></svg></div><div class="card"><b id="wcnt"></b><div><button class="btn" onclick="wt()">সব মুছুন</button></div><div class="chips" id="wchips" style="max-height:380px"></div><p><small>থিম, ছবি ও নাম উপরের জেলা-ম্যাপের সেটিং থেকেই আসবে।</small></p><button class="btn" onclick="dl('#wsvg',700,'my-world-map')">↓ PNG ডাউনলোড</button></div></div></section>
+
+<section id="explore"><h2>🧭 কোথায় ঘুরবেন</h2><select id="gsel" onchange="guide()"></select><div id="gbox" class="card" style="margin-top:12px"></div></section>
+<section id="gems"><h2>💎 লুকানো রত্ন</h2><div class="grid" id="gemlist"></div><h2>🏆 সেরা অবদানকারী</h2><div class="card" id="board"></div></section>
+
+<section id="add"><h2>➕ আপনার চেনা জায়গা পাঠান</h2><div class="card"><div id="fm"><input id="f_name" placeholder="আপনার নাম *"><select id="f_district"></select>
+<input id="f_contact" placeholder="ফোন বা ইমেইল * (প্রকাশ হবে না)"><input id="f_title" placeholder="জায়গার নাম *"><textarea id="f_desc" rows="5" placeholder="বর্ণনা, কীভাবে যাবেন, খরচ *"></textarea>
+<label>জায়গার ছবি (ঐচ্ছিক, ১০টি পর্যন্ত)</label><input type="file" id="f_photos" accept="image/*" multiple>
+<label>আপনার ছবি (ঐচ্ছিক)</label><input type="file" id="f_avatar" accept="image/*">
+<label><input type="checkbox" id="f_c" style="width:auto"> তথ্য ও ছবি প্রকাশের অনুমতি দিলাম</label><br><button class="btn" onclick="send()">যাচাইয়ের জন্য পাঠান</button><p id="fmsg"></p></div></div></section>
+
+<script>
+const $=s=>document.querySelector(s),TH=[{n:'সবুজ',a:'#0f6b4f',b:'#052e22',on:'#ffb703'},{n:'নীল',a:'#2563eb',b:'#0b1b4a',on:'#38e8c6'},{n:'গোধূলি',a:'#be185d',b:'#3b0a24',on:'#ffd166'},{n:'রাত',a:'#2a2a2a',b:'#000',on:'#4ade80'}];
+const AL={barishal:'barisal',cumilla:'comilla',bogura:'bogra',jashore:'jessore',chattogram:'chittagong',netrakona:'netrokona',chapainawabganj:'nawabganj',moulvibazar:'maulvibazar',jhalakathi:'jhalokati',narsingdi:'narshingdi',khagrachari:'khagrachhari',joypurhat:'jaipurhat',habiganj:'hobiganj',laxmipur:'lakshmipur'},K=n=>{n=n.toLowerCase().replace(/[^a-z]/g,'');return AL[n]||n};let gm={};const mk=()=>{gm={};for(const k in B.g)gm[K(k)]=B.g[k]};
+const DL="Dhaka,Gazipur,Manikganj,Munshiganj,Narayanganj,Narsingdi,Tangail,Kishoreganj,Faridpur,Gopalganj,Madaripur,Rajbari,Shariatpur,Chattogram,Cox's Bazar,Bandarban,Rangamati,Khagrachhari,Cumilla,Chandpur,Brahmanbaria,Feni,Noakhali,Lakshmipur,Sylhet,Moulvibazar,Habiganj,Sunamganj,Dinajpur,Rangpur,Kurigram,Lalmonirhat,Nilphamari,Gaibandha,Thakurgaon,Panchagarh,Rajshahi,Bogura,Naogaon,Natore,Chapainawabganj,Pabna,Sirajganj,Joypurhat,Khulna,Bagerhat,Satkhira,Jashore,Jhenaidah,Magura,Narail,Kushtia,Chuadanga,Meherpur,Barishal,Patuakhali,Bhola,Barguna,Jhalokati,Pirojpur,Mymensingh,Netrokona,Jamalpur,Sherpur".split(',');const DV=`ঢাকা|dhaka:ঢাকা,gazipur:গাজীপুর,manikganj:মানিকগঞ্জ,munshiganj:মুন্সীগঞ্জ,narayanganj:নারায়ণগঞ্জ,narshingdi:নরসিংদী,tangail:টাঙ্গাইল,kishoreganj:কিশোরগঞ্জ,faridpur:ফরিদপুর,gopalganj:গোপালগঞ্জ,madaripur:মাদারীপুর,rajbari:রাজবাড়ী,shariatpur:শরীয়তপুর
+চট্টগ্রাম|chittagong:চট্টগ্রাম,coxsbazar:কক্সবাজার,bandarban:বান্দরবান,rangamati:রাঙ্গামাটি,khagrachhari:খাগড়াছড়ি,comilla:কুমিল্লা,chandpur:চাঁদপুর,brahmanbaria:ব্রাহ্মণবাড়িয়া,feni:ফেনী,noakhali:নোয়াখালী,lakshmipur:লক্ষ্মীপুর
+সিলেট|sylhet:সিলেট,maulvibazar:মৌলভীবাজার,hobiganj:হবিগঞ্জ,sunamganj:সুনামগঞ্জ
+রংপুর|dinajpur:দিনাজপুর,rangpur:রংপুর,kurigram:কুড়িগ্রাম,lalmonirhat:লালমনিরহাট,nilphamari:নীলফামারী,gaibandha:গাইবান্ধা,thakurgaon:ঠাকুরগাঁও,panchagarh:পঞ্চগড়
+রাজশাহী|rajshahi:রাজশাহী,bogra:বগুড়া,naogaon:নওগাঁ,natore:নাটোর,nawabganj:চাঁপাইনবাবগঞ্জ,pabna:পাবনা,sirajganj:সিরাজগঞ্জ,jaipurhat:জয়পুরহাট
+খুলনা|khulna:খুলনা,bagerhat:বাগেরহাট,satkhira:সাতক্ষীরা,jessore:যশোর,jhenaidah:ঝিনাইদহ,magura:মাগুরা,narail:নড়াইল,kushtia:কুষ্টিয়া,chuadanga:চুয়াডাঙ্গা,meherpur:মেহেরপুর
+বরিশাল|barisal:বরিশাল,patuakhali:পটুয়াখালী,bhola:ভোলা,barguna:বরগুনা,jhalokati:ঝালকাঠি,pirojpur:পিরোজপুর
+ময়মনসিংহ|mymensingh:ময়মনসিংহ,netrokona:নেত্রকোণা,jamalpur:জামালপুর,sherpur:শেরপুর`.split('\n').map(l=>{const[a,b]=l.split('|');return[a,b.split(',').map(x=>x.split(':'))]}),ALL=DV.flatMap(d=>d[1].map(x=>x[0])),BN=Object.fromEntries(DV.flatMap(d=>d[1])),bn=n=>String(n).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+function chips(){const q=$('#q').value.trim().toLowerCase(),e=$('#chips'),st=e.scrollTop;e.innerHTML=DV.map(([dn,L],di)=>{const c=L.filter(([k,b])=>!q||b.includes(q)||k.includes(q));if(!c.length)return'';return`<div style="margin:0 0 14px"><div style="display:flex;justify-content:space-between;border-bottom:1px solid #2c5a49;padding:6px 0"><b>${dn} বিভাগ <small style="opacity:.6">${bn(L.filter(x=>sel.has(x[0])).length)}/${bn(L.length)}</small></b><a style="cursor:pointer;text-decoration:underline;font-size:13px" onclick="dvt(${di})">সব বাছাই</a></div><div class="chips" style="max-height:none;padding-top:8px">${c.map(([k,b])=>`<span class="chip ${sel.has(k)?'on':''}" onclick="tog('${k}')">${b}</span>`).join('')}</div></div>`}).join('')||'কোনো জেলা পাওয়া যায়নি';e.scrollTop=st}
+function dvt(d){const ks=DV[d][1].map(x=>x[0]),all=ks.every(k=>sel.has(k));ks.forEach(k=>all?sel.delete(k):sel.add(k));draw()}
+let W,WN=[],ws=new Set();let B,G,N=[],sel=new Set(),th=0,photo='',path;
+const nm=f=>{const p=f.properties,k=['ADM2_EN','shapeName','NAME_2','name','district','DISTRICT'].find(k=>p[k]);return k?p[k]:Object.values(p).find(v=>typeof v=='string')};
+async function init(){B=await(await fetch('api.php?a=boot')).json();mk();document.title=B.s.title;$('#logo').textContent=B.s.title;$('#h1').textContent=B.s.hero;$('#sub').textContent=B.s.tag;
+$('#themes').innerHTML=TH.map((t,i)=>`<span class="chip ${i?'':'on'}" style="border-left:12px solid ${t.a}" onclick="th=${i};document.querySelectorAll('#themes .chip').forEach((c,j)=>c.classList.toggle('on',j==${i}));draw()">${t.n}</span>`).join('');
+const r=await fetch('api.php?a=geo');if(r.ok){G=await r.json();G.features.forEach(f=>f.geometry&&(f.geometry=rw(f.geometry)));N=G.features.map(nm).sort();path=d3.geoPath(d3.geoMercator().fitSize([740,680],G))}else{N=DL;$('#msg').textContent='⚠️ জেলার ম্যাপ ফাইল এখনো আপলোড হয়নি। অ্যাডমিন প্যানেল থেকে GeoJSON আপলোড করলে ম্যাপ দেখাবে। ততক্ষণ তালিকা থেকে জেলা বাছাই করতে পারবেন।'}
+const o=ALL.map(k=>`<option value="${k}">${BN[k]}</option>`).join('');$('#gsel').innerHTML=o;$('#f_district').innerHTML=o;
+$('#ph').onchange=e=>{const f=e.target.files[0];if(!f){photo='';draw();return}const R=new FileReader();R.onload=()=>{photo=R.result;draw()};R.readAsDataURL(f)};
+draw();guide();gems();world()}
+function rw(g){const f=(r,cw)=>{let a=0;for(let k=0;k<r.length-1;k++)a+=(r[k+1][0]-r[k][0])*(r[k+1][1]+r[k][1]);return(a>0)===cw?r:r.slice().reverse()},p=P=>P.map((r,k)=>f(r,k==0));
+if(g.type=='Polygon')g.coordinates=p(g.coordinates);else if(g.type=='MultiPolygon')g.coordinates=g.coordinates.map(p);return g}
+function tog(n){sel.has(n)?sel.delete(n):sel.add(n);draw()}
+function all_(v){sel=new Set(v?ALL:[]);draw()}
+function draw(){const T=TH[th],s=d3.select('#svg');s.selectAll('*').remove();
+s.append('defs').html(`<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${T.a}"/><stop offset="1" stop-color="${T.b}"/></linearGradient><clipPath id="cp"><circle cx="110" cy="925" r="50"/></clipPath>`);
+s.append('rect').attr('width',800).attr('height',1000).attr('fill','url(#g)');
+s.append('text').attr('x',400).attr('y',70).attr('text-anchor','middle').attr('fill','#fff').attr('font-size',44).attr('font-weight',700).attr('font-family','Hind Siliguri,sans-serif').text('আমার বাংলাদেশ ভ্রমণ');
+s.append('text').attr('x',400).attr('y',110).attr('text-anchor','middle').attr('fill',T.on).attr('font-size',26).attr('font-family','Hind Siliguri,sans-serif').text(`${bn(sel.size)} / ${bn(64)} জেলা`);
+if(G){s.append('g').attr('transform','translate(30,140)').selectAll('path').data(G.features).join('path').attr('d',path).attr('fill',f=>sel.has(K(nm(f)))?T.on:'#ffffff30').on('click',(e,f)=>tog(K(nm(f)))).append('title').text(nm);
+if($('#lb').checked){const g=s.append('g').attr('transform','translate(30,140)').selectAll('g').data(G.features.filter(f=>sel.has(K(nm(f))))).join('g').attr('transform',f=>`translate(${path.centroid(f)})`).attr('pointer-events','none');g.append('circle').attr('r',3.5).attr('fill','#e5484d').attr('stroke','#fff').attr('stroke-width',1.2);g.append('text').attr('y',-8).attr('text-anchor','middle').attr('font-size',12).attr('font-weight',700).attr('font-family','Hind Siliguri,sans-serif').attr('fill','#111').attr('stroke','#fff').attr('stroke-width',3).attr('paint-order','stroke').text(f=>BN[K(nm(f))]||nm(f))}}
+if(photo)s.append('image').attr('href',photo).attr('x',60).attr('y',875).attr('width',100).attr('height',100).attr('clip-path','url(#cp)').attr('preserveAspectRatio','xMidYMid slice');
+s.append('text').attr('x',photo?180:60).attr('y',935).attr('fill','#fff').attr('font-size',30).attr('font-family','Hind Siliguri,sans-serif').text($('#who').value);
+$('#cnt').textContent=`${bn(sel.size)} / ${bn(64)}`;chips();if(W)wdraw()}
+function dl(id,h,n){const x=new XMLSerializer().serializeToString($(id)),i=new Image();i.onload=()=>{const c=document.createElement('canvas');c.width=1600;c.height=h*2;c.getContext('2d').drawImage(i,0,0,1600,h*2);const a=document.createElement('a');a.download=n+'.png';a.href=c.toDataURL();a.click()};i.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(x)}
+function guide(){const g=gm[K($('#gsel').value)];$('#gbox').innerHTML=g?`${g.img?`<img class="pl" src="${g.img}">`:''}<p>${g.desc||''}</p><p><b>দর্শনীয় স্থান:</b> ${g.places||''}</p><p><b>কীভাবে যাবেন:</b> ${g.how||''}</p><p><b>সেরা সময়:</b> ${g.time||''} · <b>খরচ:</b> ${g.cost||''}</p>`:'এই জেলার তথ্য শীঘ্রই আসছে।'}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function gems(){$('#gemlist').innerHTML=B.subs.map(s=>`<div class="card">${s.photos[0]?`<img class="pl" src="${s.photos[0]}">`:''}<b>${esc(s.title)}</b><br><small>${esc(s.district)}</small><p>${esc(s.desc).slice(0,220)}…</p><small>✍️ ${esc(s.name)}</small></div>`).join('')||'এখনো কোনো জায়গা নেই।';
+$('#board').innerHTML=B.board.map((b,i)=>`<p>${i+1}. ${b.photo?`<img class="av" src="${b.photo}">`:'<span class="av" style="display:inline-block"></span>'}${esc(b.name)} — <b>${b.pts}</b> পয়েন্ট</p>`).join('')||'—'}
+async function send(){const f=new FormData();f.append('name',$('#f_name').value);f.append('district',$('#f_district').selectedOptions[0].text);f.append('contact',$('#f_contact').value);f.append('title',$('#f_title').value);f.append('desc',$('#f_desc').value);
+if($('#f_c').checked)f.append('consent',1);[...$('#f_photos').files].forEach(x=>f.append('photos[]',x));if($('#f_avatar').files[0])f.append('avatar',$('#f_avatar').files[0]);
+const r=await(await fetch('api.php?a=submit',{method:'POST',body:f})).json();$('#fmsg').textContent=r.ok?'✅ পাঠানো হয়েছে, যাচাইয়ের পর প্রকাশ হবে।':r.err}
+
+async function world(){try{const t=await(await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')).json();W=topojson.feature(t,t.objects.countries);W.features=W.features.filter(f=>f.properties.name!='Antarctica');WN=W.features.map(f=>f.properties.name).sort();
+wp=d3.geoPath(d3.geoNaturalEarth1().fitSize([740,420],W));$('#wchips').innerHTML=WN.map(n=>`<span class="chip" data-n="${n}" onclick="wt(this.dataset.n)">${n}</span>`).join('');wdraw()}catch(e){$('#wcnt').textContent='বিশ্ব ম্যাপ লোড হয়নি, ইন্টারনেট চেক করুন।'}}
+let wp;function wt(n){n?(ws.has(n)?ws.delete(n):ws.add(n)):ws.clear();wdraw()}
+function wdraw(){const T=TH[th],s=d3.select('#wsvg'),F='Hind Siliguri,sans-serif';s.selectAll('*').remove();
+s.append('defs').html(`<linearGradient id="wg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${T.a}"/><stop offset="1" stop-color="${T.b}"/></linearGradient><clipPath id="wcp"><circle cx="110" cy="625" r="50"/></clipPath>`);
+s.append('rect').attr('width',800).attr('height',700).attr('fill','url(#wg)');
+const t=(x,y,z,c,v,a)=>s.append('text').attr('x',x).attr('y',y).attr('font-size',z).attr('fill',c).attr('text-anchor',a||'start').attr('font-family',F).text(v);
+t(400,70,44,'#fff','আমার বিশ্ব ভ্রমণ','middle');t(400,110,26,T.on,`${ws.size} / ${WN.length} দেশ`,'middle');
+s.append('g').attr('transform','translate(30,150)').selectAll('path').data(W.features).join('path').attr('d',wp).attr('fill',f=>ws.has(f.properties.name)?T.on:'#ffffff30').attr('stroke','#fff8').attr('stroke-width',.4).style('cursor','pointer').on('click',(e,f)=>wt(f.properties.name)).append('title').text(f=>f.properties.name);
+if(photo)s.append('image').attr('href',photo).attr('x',60).attr('y',575).attr('width',100).attr('height',100).attr('clip-path','url(#wcp)').attr('preserveAspectRatio','xMidYMid slice');
+t(photo?180:60,635,30,'#fff',$('#who').value);
+$('#wcnt').textContent=`${ws.size} / ${WN.length} দেশ বাছাই হয়েছে`;document.querySelectorAll('#wchips .chip').forEach(c=>c.classList.toggle('on',ws.has(c.dataset.n)))}
+init();
+</script></body></html>

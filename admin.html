@@ -1,0 +1,30 @@
+<!doctype html><html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin</title>
+<style>body{font-family:'Hind Siliguri',sans-serif;background:#07130f;color:#eaf7f1;margin:0;padding:20px;max-width:900px;margin:auto}
+.c{background:#102a21;border-radius:16px;padding:18px;margin:16px 0}input,select,textarea{width:100%;padding:10px;margin:5px 0;border-radius:10px;border:1px solid #2c5a49;background:#0b1f18;color:#eaf7f1;font:inherit}
+button{background:#ffb703;border:0;border-radius:20px;padding:9px 20px;font:600 15px inherit;cursor:pointer;margin:3px}.r{background:#e5484d;color:#fff}img{max-height:70px;border-radius:8px;margin:2px}</style></head><body>
+<div id="login" class="c"><h2>অ্যাডমিন লগইন</h2><input id="pw" type="password" placeholder="পাসওয়ার্ড (প্রথমে: admin123)"><button onclick="lg()">লগইন</button><p id="le"></p></div>
+<div id="app" hidden><h1>⚙️ কন্ট্রোল প্যানেল <button class="r" onclick="post('logout').then(()=>location.reload())">লগআউট</button></h1>
+<div class="c"><h3>সাইট সেটিংস</h3><input id="s_title" placeholder="সাইটের নাম"><input id="s_hero" placeholder="হিরো শিরোনাম"><input id="s_tag" placeholder="ট্যাগলাইন"><input id="s_pw" type="password" placeholder="নতুন পাসওয়ার্ড (ন্যূনতম ৬)"><button onclick="ss()">সেভ</button></div>
+<div class="c"><h3>জেলার ম্যাপ ফাইল (GeoJSON, একবার আপলোড)</h3><input type="file" id="geo" accept=".json,.geojson"><button onclick="auto()">⚡ অটো আনুন (এক ক্লিকে)</button> <button onclick="ug()">নিজের ফাইল আপলোড</button><p><small>৬৪ জেলার adm2 GeoJSON আপলোড করুন।</small></p></div>
+<div class="c"><h3>জেলার গাইড এডিট</h3><select id="d_n" onchange="ld()"></select><textarea id="d_desc" rows="3" placeholder="বর্ণনা"></textarea><textarea id="d_places" rows="2" placeholder="দর্শনীয় স্থান"></textarea><textarea id="d_how" rows="2" placeholder="কীভাবে যাবেন"></textarea><input id="d_time" placeholder="সেরা সময়"><input id="d_cost" placeholder="খরচ"><input type="file" id="d_img" accept="image/*"><button onclick="sd()">সেভ</button></div>
+<div class="c"><h3>জমা পড়া জায়গা</h3><div id="subs"></div></div></div>
+<script>
+const AL={barishal:'barisal',cumilla:'comilla',bogura:'bogra',jashore:'jessore',chattogram:'chittagong',netrakona:'netrokona',chapainawabganj:'nawabganj',moulvibazar:'maulvibazar',jhalakathi:'jhalokati',narsingdi:'narshingdi',khagrachari:'khagrachhari',joypurhat:'jaipurhat',habiganj:'hobiganj',laxmipur:'lakshmipur'},K=n=>{n=n.toLowerCase().replace(/[^a-z]/g,'');return AL[n]||n};let gm={},B;const mk=()=>{gm={};for(const k in B.g)gm[K(k)]=B.g[k]};
+const $=s=>document.querySelector(s);
+async function post(a,o={}){const f=new FormData();for(const k in o)f.append(k,o[k]);return(await fetch('api.php?a='+a,{method:'POST',body:f})).json()}
+async function lg(){const r=await post('login',{pw:$('#pw').value});r.ok?start():$('#le').textContent=r.err}
+async function start(){$('#login').hidden=true;$('#app').hidden=false;B=await(await fetch('api.php?a=boot')).json();
+mk();$('#s_title').value=B.s.title;$('#s_hero').value=B.s.hero;$('#s_tag').value=B.s.tag;
+const r=await fetch('api.php?a=geo');if(r.ok){const g=await r.json();$('#d_n').innerHTML=g.features.map(f=>{const p=f.properties,k=['ADM2_EN','shapeName','NAME_2','name','district','DISTRICT'].find(k=>p[k]);return`<option>${k?p[k]:Object.values(p).find(v=>typeof v=='string')}</option>`}).sort().join('');ld()}subs()}
+async function ss(){const r=await post('save_settings',{title:$('#s_title').value,hero:$('#s_hero').value,tag:$('#s_tag').value,newpw:$('#s_pw').value});alert(r.ok?'সেভ হয়েছে':'ব্যর্থ')}
+async function auto(){const U='https://raw.githubusercontent.com/yasserius/bangladesh_geojson_shapefile/main/',L=['small/small_bangladesh_geojson_adm2_64_districts_zillas.json','bangladesh_geojson_adm2_64_districts_zillas.json'];
+for(const p of L){try{const r=await fetch(U+p);if(!r.ok)continue;const f=new FormData();f.append('geo',new Blob([await r.text()],{type:'application/json'}),'geo.json');const u=await(await fetch('api.php?a=upload_geo',{method:'POST',body:f})).json();if(u.ok){alert('✅ ম্যাপ ফাইল বসে গেছে');location.reload();return}alert(u.err+' (হোস্টিং এর upload_max_filesize কম হতে পারে)')}catch(e){}}
+alert('অটো আনা যায়নি। নিজের ফাইল আপলোড করুন।')}
+async function ug(){const f=new FormData();f.append('geo',$('#geo').files[0]);const r=await(await fetch('api.php?a=upload_geo',{method:'POST',body:f})).json();alert(r.ok?'আপলোড হয়েছে':r.err);location.reload()}
+function ld(){const g=gm[K($('#d_n').value)]||{};['desc','places','how','time','cost'].forEach(k=>$('#d_'+k).value=g[k]||'')}
+async function sd(){const f=new FormData();f.append('name',$('#d_n').value);['desc','places','how','time','cost'].forEach(k=>f.append(k,$('#d_'+k).value));if($('#d_img').files[0])f.append('img',$('#d_img').files[0]);
+const r=await(await fetch('api.php?a=save_district',{method:'POST',body:f})).json();alert(r.ok?'সেভ হয়েছে':'ব্যর্থ');start()}
+async function subs(){const l=await(await fetch('api.php?a=subs')).json();$('#subs').innerHTML=l.map(s=>`<div class="c"><b>${s.title}</b> (${s.district}) ${s.ok?'✅':'⏳'}<br>${s.name} · ${s.contact}<p>${s.desc}</p>${s.photos.map(p=>`<img src="${p}">`).join('')}<br><button onclick="act('${s.id}','ok')">অনুমোদন</button><button onclick="act('${s.id}','no')">লুকান</button><button class="r" onclick="act('${s.id}','del')">মুছুন</button></div>`).join('')||'কিছু নেই'}
+async function act(id,d){await post('sub_do',{id,do:d});subs()}
+fetch('api.php?a=me').then(r=>r.json()).then(r=>r.a&&start());
+</script></body></html>
